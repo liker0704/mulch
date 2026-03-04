@@ -65,12 +65,36 @@ jobs:
           git tag "v$VERSION"
           git push origin "v$VERSION"
 
+      - name: Extract changelog notes
+        if: steps.version-check.outputs.publish == 'true'
+        id: changelog
+        run: |
+          VERSION="${{ steps.version-check.outputs.version }}"
+          # Extract the section for this version (between its heading and the next ## heading)
+          NOTES=$(awk '/^## \['"$VERSION"'\]/{found=1; next} found && /^## \[/{exit} found{print}' CHANGELOG.md)
+          # Trim leading/trailing blank lines
+          NOTES=$(echo "$NOTES" | awk 'NF{found=1} found{lines[++n]=$0} END{while(n>0 && lines[n]=="") n--; for(i=1;i<=n;i++) print lines[i]}')
+          if [ -n "$NOTES" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            # Write to a temp file to avoid shell escaping issues
+            echo "$NOTES" > /tmp/release-notes.md
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "Warning: No CHANGELOG entry found for $VERSION"
+          fi
+
       - name: Create GitHub release
         if: steps.version-check.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ steps.version-check.outputs.version }}"
-          gh release create "v$VERSION" \
-            --title "v$VERSION" \
-            --generate-notes
+          if [ "${{ steps.changelog.outputs.found }}" = "true" ]; then
+            gh release create "v$VERSION" \
+              --title "v$VERSION" \
+              --notes-file /tmp/release-notes.md
+          else
+            gh release create "v$VERSION" \
+              --title "v$VERSION" \
+              --generate-notes
+          fi
