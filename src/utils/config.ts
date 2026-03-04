@@ -100,7 +100,6 @@ export async function addDomain(
 export async function removeDomain(
   domain: string,
   cwd: string = process.cwd(),
-  deleteFile = false,
 ): Promise<void> {
   validateDomainName(domain);
   const config = await readConfig(cwd);
@@ -110,11 +109,9 @@ export async function removeDomain(
   }
   config.domains.splice(index, 1);
   await writeConfig(config, cwd);
-  if (deleteFile) {
-    const filePath = getExpertisePath(domain, cwd);
-    if (existsSync(filePath)) {
-      await rm(filePath);
-    }
+  const filePath = getExpertisePath(domain, cwd);
+  if (existsSync(filePath)) {
+    await rm(filePath);
   }
 }
 

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `ml delete-domain <domain>` — remove a domain from config; use `--delete-file` to also delete the expertise JSONL file; `--dry-run` to preview without changes
+- `ml delete-domain <domain>` — remove a domain from config and delete its expertise JSONL file; use `--yes` to skip confirmation prompt; `--dry-run` to preview without changes
 
 ## [0.6.3] - 2026-02-26
 
