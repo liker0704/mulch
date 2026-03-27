@@ -47,6 +47,24 @@ export function registerEditCommand(program: Command): void {
     .option("--outcome-duration <ms>", "set outcome duration in milliseconds")
     .option("--outcome-test-results <text>", "set outcome test results summary")
     .option("--outcome-agent <agent>", "set outcome agent name")
+    .option("--audience <audience>", "target audience for this record")
+    .option("--context <context>", "decision context (decision type only)")
+    .option(
+      "--consequences <consequences>",
+      "decision consequences (decision type only)",
+    )
+    .option(
+      "--decision-status <status>",
+      "decision status (decision type only)",
+    )
+    .option(
+      "--related-files <files>",
+      "decision related files comma-separated (decision type only)",
+    )
+    .option(
+      "--related-mission <mission>",
+      "related mission (decision type only)",
+    )
     .action(
       async (domain: string, id: string, options: Record<string, unknown>) => {
         const jsonMode = program.opts().json === true;
@@ -127,6 +145,31 @@ export function registerEditCommand(program: Command): void {
               }
               record.outcomes = [...(record.outcomes ?? []), o];
             }
+            if (typeof options.audience === "string") {
+              record.audience = options.audience;
+            }
+
+            const decisionOnlyFlags = [
+              "context",
+              "consequences",
+              "decisionStatus",
+              "relatedFiles",
+              "relatedMission",
+            ];
+            const usedDecisionFlags = decisionOnlyFlags.filter(
+              (f) => options[f] !== undefined,
+            );
+            if (usedDecisionFlags.length > 0 && record.type !== "decision") {
+              const flagNames = usedDecisionFlags.map(
+                (f) => `--${f.replace(/([A-Z])/g, "-$1").toLowerCase()}`,
+              );
+              if (!isQuiet())
+                console.warn(
+                  chalk.yellow(
+                    `Warning: ${flagNames.join(", ")} ignored — only applies to decision records`,
+                  ),
+                );
+            }
 
             switch (record.type) {
               case "convention":
@@ -159,6 +202,24 @@ export function registerEditCommand(program: Command): void {
                 }
                 if (options.rationale) {
                   record.rationale = options.rationale as string;
+                }
+                if (typeof options.context === "string") {
+                  record.context = options.context;
+                }
+                if (typeof options.consequences === "string") {
+                  record.consequences = options.consequences;
+                }
+                if (typeof options.decisionStatus === "string") {
+                  record.decision_status = options.decisionStatus;
+                }
+                if (typeof options.relatedFiles === "string") {
+                  record.related_files = options.relatedFiles
+                    .split(",")
+                    .map((f: string) => f.trim())
+                    .filter(Boolean);
+                }
+                if (typeof options.relatedMission === "string") {
+                  record.related_mission = options.relatedMission;
                 }
                 break;
               case "reference":
