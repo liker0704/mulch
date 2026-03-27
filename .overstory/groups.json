@@ -1,0 +1,24 @@
+[
+	{
+		"id": "group-3bad212d",
+		"name": "batch-1-schema-foundation",
+		"memberIssueIds": [
+			"seeds-f5ce"
+		],
+		"status": "active",
+		"createdAt": "2026-03-27T12:11:56.971Z",
+		"completedAt": null
+	},
+	{
+		"id": "group-0828fdc5",
+		"name": "batch-2-dependent-workstreams",
+		"memberIssueIds": [
+			"seeds-a61a",
+			"seeds-af7c",
+			"seeds-3cbd"
+		],
+		"status": "active",
+		"createdAt": "2026-03-27T12:38:47.188Z",
+		"completedAt": null
+	}
+]
