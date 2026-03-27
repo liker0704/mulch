@@ -110,9 +110,3 @@ healthPolicy:
   defaultCooldownMs: 300000
   evaluationIntervalMs: 60000
   maxPauseDurationMs: 600000
-context:
-  enabled: true
-  cachePath: .overstory/project-context.json
-observability:
-  enabled: false
-  exporters: []
