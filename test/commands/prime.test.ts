@@ -2246,4 +2246,174 @@ describe("prime command", () => {
       }
     });
   });
+
+  describe("audience filtering", () => {
+    let originalCwd: string;
+
+    beforeEach(() => {
+      originalCwd = process.cwd();
+    });
+
+    afterEach(() => {
+      process.chdir(originalCwd);
+      process.exitCode = 0;
+    });
+
+    function makeProgram(): Command {
+      const program = new Command();
+      program
+        .name("mulch")
+        .option("--json", "output as structured JSON")
+        .exitOverride();
+      registerPrimeCommand(program);
+      return program;
+    }
+
+    const builderRecord: ExpertiseRecord = {
+      type: "convention",
+      content: "Builder convention",
+      classification: "foundational",
+      recorded_at: new Date().toISOString(),
+      audience: "builder",
+    };
+
+    const reviewerRecord: ExpertiseRecord = {
+      type: "convention",
+      content: "Reviewer convention",
+      classification: "foundational",
+      recorded_at: new Date().toISOString(),
+      audience: "reviewer",
+    };
+
+    const untaggedRecord: ExpertiseRecord = {
+      type: "convention",
+      content: "General convention",
+      classification: "foundational",
+      recorded_at: new Date().toISOString(),
+    };
+
+    it("filterByAudience includes records without audience field", async () => {
+      const { filterByAudience } = await import("../../src/utils/expertise.ts");
+      const records = [builderRecord, untaggedRecord];
+      const result = filterByAudience(records, ["builder"]);
+      expect(result).toContain(builderRecord);
+      expect(result).toContain(untaggedRecord);
+    });
+
+    it("filterByAudience includes matching audience", async () => {
+      const { filterByAudience } = await import("../../src/utils/expertise.ts");
+      const records = [builderRecord, reviewerRecord, untaggedRecord];
+      const result = filterByAudience(records, ["builder"]);
+      expect(result).toContain(builderRecord);
+      expect(result).not.toContain(reviewerRecord);
+      expect(result).toContain(untaggedRecord);
+    });
+
+    it("filterByAudience excludes non-matching audience", async () => {
+      const { filterByAudience } = await import("../../src/utils/expertise.ts");
+      const records = [builderRecord, reviewerRecord];
+      const result = filterByAudience(records, ["builder"]);
+      expect(result).not.toContain(reviewerRecord);
+    });
+
+    it("excludeByAudience excludes matching audience", async () => {
+      const { excludeByAudience } = await import(
+        "../../src/utils/expertise.ts"
+      );
+      const internalRecord: ExpertiseRecord = {
+        type: "convention",
+        content: "Internal convention",
+        classification: "foundational",
+        recorded_at: new Date().toISOString(),
+        audience: "internal",
+      };
+      const records = [internalRecord, untaggedRecord];
+      const result = excludeByAudience(records, ["internal"]);
+      expect(result).not.toContain(internalRecord);
+      expect(result).toContain(untaggedRecord);
+    });
+
+    it("excludeByAudience keeps records without audience", async () => {
+      const { excludeByAudience } = await import(
+        "../../src/utils/expertise.ts"
+      );
+      const records = [builderRecord, untaggedRecord];
+      const result = excludeByAudience(records, ["builder"]);
+      expect(result).toContain(untaggedRecord);
+      expect(result).not.toContain(builderRecord);
+    });
+
+    it("prime --audience flag filters output", async () => {
+      await writeConfig({ ...DEFAULT_CONFIG, domains: ["testing"] }, tmpDir);
+      const filePath = getExpertisePath("testing", tmpDir);
+      await createExpertiseFile(filePath);
+      await appendRecord(filePath, { ...builderRecord });
+      await appendRecord(filePath, { ...reviewerRecord });
+      await appendRecord(filePath, { ...untaggedRecord });
+
+      process.chdir(tmpDir);
+      const logSpy = spyOn(console, "log").mockImplementation(() => {});
+      try {
+        const program = makeProgram();
+        await program.parseAsync([
+          "node",
+          "mulch",
+          "prime",
+          "--audience",
+          "builder",
+        ]);
+        const output = (logSpy.mock.calls[0][0] as string) ?? "";
+        expect(output).toContain("Builder convention");
+        expect(output).toContain("General convention");
+        expect(output).not.toContain("Reviewer convention");
+      } finally {
+        logSpy.mockRestore();
+      }
+    });
+
+    it("prime --exclude-audience flag filters output", async () => {
+      await writeConfig({ ...DEFAULT_CONFIG, domains: ["testing"] }, tmpDir);
+      const filePath = getExpertisePath("testing", tmpDir);
+      await createExpertiseFile(filePath);
+      await appendRecord(filePath, { ...builderRecord });
+      await appendRecord(filePath, { ...reviewerRecord });
+      await appendRecord(filePath, { ...untaggedRecord });
+
+      process.chdir(tmpDir);
+      const logSpy = spyOn(console, "log").mockImplementation(() => {});
+      try {
+        const program = makeProgram();
+        await program.parseAsync([
+          "node",
+          "mulch",
+          "prime",
+          "--exclude-audience",
+          "builder",
+        ]);
+        const output = (logSpy.mock.calls[0][0] as string) ?? "";
+        expect(output).not.toContain("Builder convention");
+        expect(output).toContain("Reviewer convention");
+        expect(output).toContain("General convention");
+      } finally {
+        logSpy.mockRestore();
+      }
+    });
+
+    it("compact output shows audience tag", () => {
+      const { compactLine } = (() => {
+        // Use formatDomainExpertiseCompact which calls compactLine internally
+        return { compactLine: null };
+      })();
+      // Test via formatDomainExpertiseCompact
+      const record: ExpertiseRecord = {
+        type: "convention",
+        content: "Some convention",
+        classification: "foundational",
+        recorded_at: new Date().toISOString(),
+        audience: "builder",
+      };
+      const output = formatDomainExpertiseCompact("test", [record], null);
+      expect(output).toContain("[audience: builder]");
+    });
+  });
 });
