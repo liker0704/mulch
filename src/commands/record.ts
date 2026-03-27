@@ -215,6 +215,24 @@ export function registerRecordCommand(program: Command): void {
     .option("--evidence-bead <bead>", "evidence: bead ID")
     .option("--relates-to <ids>", "comma-separated record IDs this relates to")
     .option("--supersedes <ids>", "comma-separated record IDs this supersedes")
+    .option("--audience <audience>", "target audience for this record")
+    .option("--context <context>", "decision context (decision type only)")
+    .option(
+      "--consequences <consequences>",
+      "decision consequences (decision type only)",
+    )
+    .option(
+      "--decision-status <status>",
+      "decision status (decision type only)",
+    )
+    .option(
+      "--related-files <files>",
+      "decision related files comma-separated (decision type only)",
+    )
+    .option(
+      "--related-mission <mission>",
+      "related mission (decision type only)",
+    )
     .addOption(
       new Option("--outcome-status <status>", "outcome status").choices([
         "success",
@@ -598,6 +616,28 @@ Batch recording examples:
           outcomes = [o];
         }
 
+        const decisionOnlyFlags = [
+          "context",
+          "consequences",
+          "decisionStatus",
+          "relatedFiles",
+          "relatedMission",
+        ];
+        const usedDecisionFlags = decisionOnlyFlags.filter(
+          (f) => options[f] !== undefined,
+        );
+        if (usedDecisionFlags.length > 0 && recordType !== "decision") {
+          const flagNames = usedDecisionFlags.map(
+            (f) => `--${f.replace(/([A-Z])/g, "-$1").toLowerCase()}`,
+          );
+          if (!isQuiet())
+            console.warn(
+              chalk.yellow(
+                `Warning: ${flagNames.join(", ")} ignored — only applies to decision records`,
+              ),
+            );
+        }
+
         let record: ExpertiseRecord;
 
         switch (recordType) {
@@ -631,6 +671,9 @@ Batch recording examples:
                 relatesTo.length > 0 && { relates_to: relatesTo }),
               ...(supersedes && supersedes.length > 0 && { supersedes }),
               ...(outcomes && { outcomes }),
+              ...(typeof options.audience === "string" && {
+                audience: options.audience,
+              }),
             };
             break;
           }
@@ -670,6 +713,9 @@ Batch recording examples:
                 relatesTo.length > 0 && { relates_to: relatesTo }),
               ...(supersedes && supersedes.length > 0 && { supersedes }),
               ...(outcomes && { outcomes }),
+              ...(typeof options.audience === "string" && {
+                audience: options.audience,
+              }),
             };
             break;
           }
@@ -705,6 +751,9 @@ Batch recording examples:
                 relatesTo.length > 0 && { relates_to: relatesTo }),
               ...(supersedes && supersedes.length > 0 && { supersedes }),
               ...(outcomes && { outcomes }),
+              ...(typeof options.audience === "string" && {
+                audience: options.audience,
+              }),
             };
             break;
           }
@@ -740,6 +789,27 @@ Batch recording examples:
                 relatesTo.length > 0 && { relates_to: relatesTo }),
               ...(supersedes && supersedes.length > 0 && { supersedes }),
               ...(outcomes && { outcomes }),
+              ...(typeof options.audience === "string" && {
+                audience: options.audience,
+              }),
+              ...(typeof options.context === "string" && {
+                context: options.context,
+              }),
+              ...(typeof options.consequences === "string" && {
+                consequences: options.consequences,
+              }),
+              ...(typeof options.decisionStatus === "string" && {
+                decision_status: options.decisionStatus,
+              }),
+              ...(typeof options.relatedFiles === "string" && {
+                related_files: options.relatedFiles
+                  .split(",")
+                  .map((f: string) => f.trim())
+                  .filter(Boolean),
+              }),
+              ...(typeof options.relatedMission === "string" && {
+                related_mission: options.relatedMission,
+              }),
             };
             break;
           }
@@ -779,6 +849,9 @@ Batch recording examples:
                 relatesTo.length > 0 && { relates_to: relatesTo }),
               ...(supersedes && supersedes.length > 0 && { supersedes }),
               ...(outcomes && { outcomes }),
+              ...(typeof options.audience === "string" && {
+                audience: options.audience,
+              }),
             };
             break;
           }
@@ -815,6 +888,9 @@ Batch recording examples:
                 relatesTo.length > 0 && { relates_to: relatesTo }),
               ...(supersedes && supersedes.length > 0 && { supersedes }),
               ...(outcomes && { outcomes }),
+              ...(typeof options.audience === "string" && {
+                audience: options.audience,
+              }),
             };
             break;
           }

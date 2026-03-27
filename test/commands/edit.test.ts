@@ -1,7 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Command } from "commander";
+import { registerEditCommand } from "../../src/commands/edit.ts";
 import { DEFAULT_CONFIG } from "../../src/schemas/config.ts";
 import {
   getExpertisePath,
@@ -305,5 +307,158 @@ describe("edit command", () => {
       expect(updated[0].rationale).toBe("Type safety");
     }
     expect(updated[0].outcomes?.[0]?.status).toBe("success");
+  });
+});
+
+// ── CLI flags: --audience, --context, --consequences, --decision-status, --related-files, --related-mission ──
+
+async function runEdit(
+  tmpDir: string,
+  args: string[],
+): Promise<{ stdout: string; stderr: string; exitCode: number | undefined }> {
+  const stdoutLines: string[] = [];
+  const stderrLines: string[] = [];
+
+  const logSpy = spyOn(console, "log").mockImplementation((...a) => {
+    stdoutLines.push(a.map(String).join(" "));
+  });
+  const errSpy = spyOn(console, "error").mockImplementation((...a) => {
+    stderrLines.push(a.map(String).join(" "));
+  });
+  const warnSpy = spyOn(console, "warn").mockImplementation((...a) => {
+    stderrLines.push(a.map(String).join(" "));
+  });
+
+  const prevExitCode = process.exitCode;
+  process.exitCode = 0;
+
+  const origCwd = process.cwd();
+  process.chdir(tmpDir);
+
+  try {
+    const program = new Command();
+    program.option("--json", "output JSON");
+    program.exitOverride();
+    registerEditCommand(program);
+    await program.parseAsync(["node", "mulch", "edit", ...args]);
+  } catch {
+    // ignore commander exitOverride
+  } finally {
+    process.chdir(origCwd);
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+    warnSpy.mockRestore();
+  }
+
+  const exitCode = process.exitCode as number | undefined;
+  process.exitCode = prevExitCode;
+
+  return {
+    stdout: stdoutLines.join("\n"),
+    stderr: stderrLines.join("\n"),
+    exitCode,
+  };
+}
+
+describe("edit command -- new field flags", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "mulch-edit-flags-test-"));
+    await initMulchDir(tmpDir);
+    await writeConfig({ ...DEFAULT_CONFIG, domains: ["testing"] }, tmpDir);
+    const filePath = getExpertisePath("testing", tmpDir);
+    await createExpertiseFile(filePath);
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("--audience sets audience on convention record", async () => {
+    const filePath = getExpertisePath("testing", tmpDir);
+    await appendRecord(filePath, {
+      type: "convention",
+      content: "Old content",
+      classification: "tactical",
+      recorded_at: new Date().toISOString(),
+    });
+
+    const records = await readExpertiseFile(filePath);
+    const id = records[0].id as string;
+
+    await runEdit(tmpDir, ["testing", id, "--audience", "human"]);
+
+    const updated = await readExpertiseFile(filePath);
+    expect(updated[0].audience).toBe("human");
+  });
+
+  it("decision-only flags set fields on decision record", async () => {
+    const filePath = getExpertisePath("testing", tmpDir);
+    await appendRecord(filePath, {
+      type: "decision",
+      title: "Use PostgreSQL",
+      rationale: "Better scalability",
+      classification: "tactical",
+      recorded_at: new Date().toISOString(),
+    });
+
+    const records = await readExpertiseFile(filePath);
+    const id = records[0].id as string;
+
+    await runEdit(tmpDir, [
+      "testing",
+      id,
+      "--audience",
+      "engineers",
+      "--context",
+      "We needed a scalable DB",
+      "--consequences",
+      "Migration required",
+      "--decision-status",
+      "accepted",
+      "--related-files",
+      "src/db.ts,src/config.ts",
+      "--related-mission",
+      "infrastructure",
+    ]);
+
+    const updated = await readExpertiseFile(filePath);
+    expect(updated[0].type).toBe("decision");
+    if (updated[0].type === "decision") {
+      expect(updated[0].audience).toBe("engineers");
+      expect(updated[0].context).toBe("We needed a scalable DB");
+      expect(updated[0].consequences).toBe("Migration required");
+      expect(updated[0].decision_status).toBe("accepted");
+      expect(updated[0].related_files).toEqual(["src/db.ts", "src/config.ts"]);
+      expect(updated[0].related_mission).toBe("infrastructure");
+    }
+  });
+
+  it("decision-only flags warn and are ignored for non-decision types", async () => {
+    const filePath = getExpertisePath("testing", tmpDir);
+    await appendRecord(filePath, {
+      type: "convention",
+      content: "Some convention",
+      classification: "tactical",
+      recorded_at: new Date().toISOString(),
+    });
+
+    const records = await readExpertiseFile(filePath);
+    const id = records[0].id as string;
+
+    const { stderr } = await runEdit(tmpDir, [
+      "testing",
+      id,
+      "--context",
+      "foo",
+    ]);
+
+    const updated = await readExpertiseFile(filePath);
+    // context should NOT be set on convention record
+    expect((updated[0] as Record<string, unknown>).context).toBeUndefined();
+    // warning should appear
+    expect(stderr).toContain("--context");
+    expect(stderr).toContain("ignored");
   });
 });
