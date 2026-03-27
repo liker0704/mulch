@@ -34,6 +34,7 @@ interface BaseRecord {
   relates_to?: string[];
   supersedes?: string[];
   outcomes?: Outcome[];
+  audience?: string;
 }
 
 export interface ConventionRecord extends BaseRecord {
@@ -59,6 +60,11 @@ export interface DecisionRecord extends BaseRecord {
   title: string;
   rationale: string;
   date?: string;
+  context?: string;
+  consequences?: string;
+  decision_status?: string;
+  related_files?: string[];
+  related_mission?: string;
 }
 
 export interface ReferenceRecord extends BaseRecord {
