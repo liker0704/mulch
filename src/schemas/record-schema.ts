@@ -52,6 +52,7 @@ export const recordSchema = {
         relates_to: linkArray,
         supersedes: linkArray,
         outcomes: { type: "array", items: { $ref: "#/definitions/outcome" } },
+        audience: { type: "string" },
       },
       required: ["type", "content", "classification", "recorded_at"],
       additionalProperties: false,
@@ -71,6 +72,7 @@ export const recordSchema = {
         relates_to: linkArray,
         supersedes: linkArray,
         outcomes: { type: "array", items: { $ref: "#/definitions/outcome" } },
+        audience: { type: "string" },
       },
       required: [
         "type",
@@ -95,6 +97,7 @@ export const recordSchema = {
         relates_to: linkArray,
         supersedes: linkArray,
         outcomes: { type: "array", items: { $ref: "#/definitions/outcome" } },
+        audience: { type: "string" },
       },
       required: [
         "type",
@@ -120,6 +123,12 @@ export const recordSchema = {
         relates_to: linkArray,
         supersedes: linkArray,
         outcomes: { type: "array", items: { $ref: "#/definitions/outcome" } },
+        audience: { type: "string" },
+        context: { type: "string" },
+        consequences: { type: "string" },
+        decision_status: { type: "string" },
+        related_files: { type: "array", items: { type: "string" } },
+        related_mission: { type: "string" },
       },
       required: ["type", "title", "rationale", "classification", "recorded_at"],
       additionalProperties: false,
@@ -139,6 +148,7 @@ export const recordSchema = {
         relates_to: linkArray,
         supersedes: linkArray,
         outcomes: { type: "array", items: { $ref: "#/definitions/outcome" } },
+        audience: { type: "string" },
       },
       required: [
         "type",
@@ -163,6 +173,7 @@ export const recordSchema = {
         relates_to: linkArray,
         supersedes: linkArray,
         outcomes: { type: "array", items: { $ref: "#/definitions/outcome" } },
+        audience: { type: "string" },
       },
       required: [
         "type",

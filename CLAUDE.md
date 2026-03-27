@@ -59,42 +59,43 @@ Each command lives in `src/commands/<name>.ts` and exports a `register<Name>Comm
 
 <!-- mulch:start -->
 ## Project Expertise (Mulch)
+<!-- mulch-onboard-v:1 -->
 
 This project uses [Mulch](https://github.com/jayminwest/mulch) for structured expertise management.
 
 **At the start of every session**, run:
 ```bash
-ml prime
+mulch prime
 ```
 
 This injects project-specific conventions, patterns, decisions, and other learnings into your context.
-Use `ml prime --files src/foo.ts` to load only records relevant to specific files.
+Use `mulch prime --files src/foo.ts` to load only records relevant to specific files.
 
 **Before completing your task**, review your work for insights worth preserving — conventions discovered,
 patterns applied, failures encountered, or decisions made — and record them:
 ```bash
-ml record <domain> --type <convention|pattern|failure|decision|reference|guide> --description "..."
+mulch record <domain> --type <convention|pattern|failure|decision|reference|guide> --description "..."
 ```
 
 Link evidence when available: `--evidence-commit <sha>`, `--evidence-bead <id>`
 
-Run `ml status` to check domain health and entry counts.
-Run `ml --help` for full usage.
+Run `mulch status` to check domain health and entry counts.
+Run `mulch --help` for full usage.
 Mulch write commands use file locking and atomic writes — multiple agents can safely record to the same domain concurrently.
 
 ### Before You Finish
 
 1. Discover what to record:
    ```bash
-   ml learn
+   mulch learn
    ```
 2. Store insights from this work session:
    ```bash
-   ml record <domain> --type <convention|pattern|failure|decision|reference|guide> --description "..."
+   mulch record <domain> --type <convention|pattern|failure|decision|reference|guide> --description "..."
    ```
 3. Validate and commit:
    ```bash
-   ml sync
+   mulch sync
    ```
 <!-- mulch:end -->
 
@@ -123,3 +124,26 @@ This injects session context: rules, command reference, and workflows.
 2. File issues for remaining work: `sd create --title "..."`
 3. Sync and push: `sd sync && git push`
 <!-- seeds:end -->
+
+<!-- canopy:start -->
+## Prompt Management (Canopy)
+<!-- canopy-onboard-v:1 -->
+
+This project uses [Canopy](https://github.com/jayminwest/canopy) for git-native prompt management.
+
+**At the start of every session**, run:
+```
+cn prime
+```
+
+This injects prompt workflow context: commands, conventions, and common workflows.
+
+**Quick reference:**
+- `cn list` — List all prompts
+- `cn render <name>` — View rendered prompt (resolves inheritance)
+- `cn emit --all` — Render prompts to files
+- `cn update <name>` — Update a prompt (creates new version)
+- `cn sync` — Stage and commit .canopy/ changes
+
+**Do not manually edit emitted files.** Use `cn update` to modify prompts, then `cn emit` to regenerate.
+<!-- canopy:end -->
