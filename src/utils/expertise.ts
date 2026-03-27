@@ -161,6 +161,26 @@ export function filterByFile(
   });
 }
 
+export function filterByAudience(
+  records: ExpertiseRecord[],
+  audiences: string[],
+): ExpertiseRecord[] {
+  return records.filter((r) => {
+    if (!r.audience) return true;
+    return audiences.includes(r.audience);
+  });
+}
+
+export function excludeByAudience(
+  records: ExpertiseRecord[],
+  audiences: string[],
+): ExpertiseRecord[] {
+  return records.filter((r) => {
+    if (!r.audience) return true;
+    return !audiences.includes(r.audience);
+  });
+}
+
 export function findDuplicate(
   existing: ExpertiseRecord[],
   newRecord: ExpertiseRecord,

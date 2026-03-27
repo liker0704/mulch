@@ -61,6 +61,9 @@ function formatRecordMeta(r: ExpertiseRecord, full: boolean): string {
   if (r.tags && r.tags.length > 0) {
     parts.push(`[tags: ${r.tags.join(", ")}]`);
   }
+  if (r.audience) {
+    parts.push(`[audience: ${r.audience}]`);
+  }
   return ` ${parts.join(" ")}${formatLinks(r)}`;
 }
 
@@ -172,27 +175,28 @@ function compactLine(r: ExpertiseRecord): string {
   const links = formatLinks(r);
   const id = compactId(r);
   const outcome = formatOutcome(r.outcomes);
+  const audienceTag = r.audience ? ` [audience: ${r.audience}]` : "";
   switch (r.type) {
     case "convention":
-      return `- [convention] ${truncate(r.content)}${id}${outcome}${links}`;
+      return `- [convention] ${truncate(r.content)}${id}${outcome}${audienceTag}${links}`;
     case "pattern": {
       const files =
         r.files && r.files.length > 0 ? ` (${r.files.join(", ")})` : "";
-      return `- [pattern] ${r.name}: ${truncate(r.description)}${files}${id}${outcome}${links}`;
+      return `- [pattern] ${r.name}: ${truncate(r.description)}${files}${id}${outcome}${audienceTag}${links}`;
     }
     case "failure":
-      return `- [failure] ${truncate(r.description)} → ${truncate(r.resolution)}${id}${outcome}${links}`;
+      return `- [failure] ${truncate(r.description)} → ${truncate(r.resolution)}${id}${outcome}${audienceTag}${links}`;
     case "decision":
-      return `- [decision] ${r.title}: ${truncate(r.rationale)}${id}${outcome}${links}`;
+      return `- [decision] ${r.title}: ${truncate(r.rationale)}${id}${outcome}${audienceTag}${links}`;
     case "reference": {
       const refFiles =
         r.files && r.files.length > 0
           ? `: ${r.files.join(", ")}`
           : `: ${truncate(r.description)}`;
-      return `- [reference] ${r.name}${refFiles}${id}${outcome}${links}`;
+      return `- [reference] ${r.name}${refFiles}${id}${outcome}${audienceTag}${links}`;
     }
     case "guide":
-      return `- [guide] ${r.name}: ${truncate(r.description)}${id}${outcome}${links}`;
+      return `- [guide] ${r.name}: ${truncate(r.description)}${id}${outcome}${audienceTag}${links}`;
   }
 }
 
@@ -549,6 +553,9 @@ export function formatDomainExpertiseXml(
         );
       }
     }
+    if (r.audience) {
+      lines.push(`    <audience>${xmlEscape(r.audience)}</audience>`);
+    }
     lines.push(`  </${r.type}>`);
   }
 
@@ -604,7 +611,8 @@ export function formatDomainExpertisePlain(
     lines.push("Conventions:");
     for (const r of conventions) {
       const id = r.id ? `[${r.id}] ` : "";
-      lines.push(`  - ${id}${r.content}${formatLinks(r)}`);
+      const audienceTag = r.audience ? ` [audience: ${r.audience}]` : "";
+      lines.push(`  - ${id}${r.content}${audienceTag}${formatLinks(r)}`);
     }
     lines.push("");
   }
@@ -616,6 +624,9 @@ export function formatDomainExpertisePlain(
       if (r.files && r.files.length > 0) {
         line += ` (${r.files.join(", ")})`;
       }
+      if (r.audience) {
+        line += ` [audience: ${r.audience}]`;
+      }
       line += formatLinks(r);
       lines.push(line);
     }
@@ -625,7 +636,8 @@ export function formatDomainExpertisePlain(
     lines.push("Known Failures:");
     for (const r of failures) {
       const id = r.id ? `[${r.id}] ` : "";
-      lines.push(`  - ${id}${r.description}${formatLinks(r)}`);
+      const audienceTag = r.audience ? ` [audience: ${r.audience}]` : "";
+      lines.push(`  - ${id}${r.description}${audienceTag}${formatLinks(r)}`);
       lines.push(`    Fix: ${r.resolution}`);
     }
     lines.push("");
@@ -634,7 +646,10 @@ export function formatDomainExpertisePlain(
     lines.push("Decisions:");
     for (const r of decisions) {
       const id = r.id ? `[${r.id}] ` : "";
-      lines.push(`  - ${id}${r.title}: ${r.rationale}${formatLinks(r)}`);
+      const audienceTag = r.audience ? ` [audience: ${r.audience}]` : "";
+      lines.push(
+        `  - ${id}${r.title}: ${r.rationale}${audienceTag}${formatLinks(r)}`,
+      );
     }
     lines.push("");
   }
@@ -652,6 +667,9 @@ export function formatDomainExpertisePlain(
       if (r.files && r.files.length > 0) {
         line += ` (${r.files.join(", ")})`;
       }
+      if (r.audience) {
+        line += ` [audience: ${r.audience}]`;
+      }
       line += formatLinks(r);
       lines.push(line);
     }
@@ -661,7 +679,10 @@ export function formatDomainExpertisePlain(
     lines.push("Guides:");
     for (const r of guides) {
       const id = r.id ? `[${r.id}] ` : "";
-      lines.push(`  - ${id}${r.name}: ${r.description}${formatLinks(r)}`);
+      const audienceTag = r.audience ? ` [audience: ${r.audience}]` : "";
+      lines.push(
+        `  - ${id}${r.name}: ${r.description}${audienceTag}${formatLinks(r)}`,
+      );
     }
     lines.push("");
   }

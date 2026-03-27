@@ -7,7 +7,12 @@ import {
 } from "../utils/budget.ts";
 import type { DomainRecords } from "../utils/budget.ts";
 import { getExpertisePath, readConfig } from "../utils/config.ts";
-import { getFileModTime, readExpertiseFile } from "../utils/expertise.ts";
+import {
+  excludeByAudience,
+  filterByAudience,
+  getFileModTime,
+  readExpertiseFile,
+} from "../utils/expertise.ts";
 import {
   formatDomainExpertise,
   formatDomainExpertiseCompact,
@@ -37,6 +42,8 @@ interface PrimeOptions {
   files?: string[];
   budget?: string;
   noLimit?: boolean;
+  audience?: string;
+  excludeAudience?: string;
 }
 
 /**
@@ -94,6 +101,14 @@ export function registerPrimeCommand(program: Command): void {
     .option(
       "--files <paths...>",
       "filter records to only those relevant to specified files",
+    )
+    .option(
+      "--audience <audiences>",
+      "filter by target audience(s), comma-separated",
+    )
+    .option(
+      "--exclude-audience <audiences>",
+      "exclude audience(s), comma-separated",
     )
     .option("--export <path>", "export output to a file")
     .option(
@@ -187,6 +202,16 @@ export function registerPrimeCommand(program: Command): void {
           filesToFilter = options.files;
         }
 
+        // Parse audience filters
+        const audienceInclude = options.audience
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const audienceExclude = options.excludeAudience
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
         // Determine budget settings
         const isMachineOutput = options.mcp === true || jsonMode;
         const budgetEnabled = !isMachineOutput && options.noLimit !== true;
@@ -205,6 +230,12 @@ export function registerPrimeCommand(program: Command): void {
             if (filesToFilter) {
               records = filterByContext(records, filesToFilter);
             }
+            if (audienceInclude) {
+              records = filterByAudience(records, audienceInclude);
+            }
+            if (audienceExclude) {
+              records = excludeByAudience(records, audienceExclude);
+            }
             if (!filesToFilter || records.length > 0) {
               domains.push({ domain, entry_count: records.length, records });
             }
@@ -221,6 +252,12 @@ export function registerPrimeCommand(program: Command): void {
             if (filesToFilter) {
               records = filterByContext(records, filesToFilter);
               if (records.length === 0) continue;
+            }
+            if (audienceInclude) {
+              records = filterByAudience(records, audienceInclude);
+            }
+            if (audienceExclude) {
+              records = excludeByAudience(records, audienceExclude);
             }
             allDomainRecords.push({ domain, records });
             const lastUpdated = await getFileModTime(filePath);
